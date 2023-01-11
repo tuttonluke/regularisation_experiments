@@ -123,3 +123,7 @@ def model_k_fold_grid_search(model):
 for i, model in enumerate(model_list):
     print(model_name_list[i])
     model_k_fold_grid_search(model)
+
+# LR: Best Loss: 0.5582901717686558
+# Lasso: Best Loss: 1.002271928824158
+# Ridge: Best Loss: 0.558278725868561
