@@ -20,7 +20,7 @@ class GradientDescent:
 
         return scaled_X, scaled_y
     
-    def batch_gradient_descent(self, X, y_true, epochs=1000, learning_rate = 0.01):
+    def batch_gradient_descent(self, X, y_true, epochs=1000, learning_rate = 0.01, reg=None, reg_factor=0.1):
         number_of_features = X.shape[1]
         W = np.ones(shape=(number_of_features))
         b = 0
@@ -40,7 +40,16 @@ class GradientDescent:
             W = W - learning_rate * W_grad
             b = b - learning_rate * b_grad
 
-            cost = np.mean(np.square(y_true - y_pred)) # MSE
+            self.W = W
+            self.b = b
+
+            if reg == "lasso": # lasso regularisation
+                cost = np.mean(np.square(y_true - y_pred)) + self.lasso_regularisation(W, reg_factor)
+            elif reg == "ridge": # ridge regularisation
+                cost = np.mean(np.square(y_true - y_pred)) + self.ridge_regularisation(W, reg_factor)
+            else: # no regularisation
+                cost = np.mean(np.square(y_true - y_pred)) 
+
             if cost < best_loss:
                 best_loss = cost
 
@@ -50,8 +59,7 @@ class GradientDescent:
                 epoch_list.append(epoch)
         
         # update optimised weights and bias for prediction
-        self.W = W
-        self.b = b
+        
 
         print(f"Best Training Loss: {best_loss}")
         print(f"Weights: {W}\nBias: {b}\nLoss: {cost}")
@@ -62,8 +70,15 @@ class GradientDescent:
         y_pred = np.dot(X, self.W) + self.b
         return y_pred
     
-    def batch_gradient_descent_lasso(self, X, y_true, epochs=1000, learning_rate = 0.01, alpha=0.1):
-        pass
+    def lasso_regularisation(self, W, reg_factor=0.1):
+        penalty = reg_factor*np.sum(W)
+
+        return penalty
+
+    def ridge_regularisation(self, W, reg_factor=0.1):
+        penalty = np.sqrt(np.sum(W**2))
+
+        return penalty
 
     def plot_cost(self, epoch_list, cost_list):
         plt.xlabel("Epoch")
@@ -87,18 +102,23 @@ if __name__ == "__main__":
     X_validation_scaled, y_validation_scaled = model.min_max_norm(X_validation, 
                                                                     y_validation)    
 
+    regularisation_list = [None, "lasso", "ridge"]
 
-    W, b, cost, cost_list, epoch_list = model.batch_gradient_descent(
-        X_train_scaled, y_train_scaled.reshape(y_train_scaled.shape[0],),  
-    )
+    for index, reg in enumerate(regularisation_list):
 
-    y_train_predicted = model.predict(X_train_scaled)
-    y_test_predicted = model.predict(X_test_scaled)
-    y_validation_predicted = model.predict(X_validation_scaled)
-    
-    train_loss = mean_squared_error(y_train_scaled, y_train_predicted)
-    test_loss = mean_squared_error(y_test_scaled, y_test_predicted)
-    validation_loss = mean_squared_error(y_validation_scaled, y_validation_predicted)
-    
-    print(f"Train Loss: {train_loss}\nTest Loss: {test_loss}\nValidation Loss: {validation_loss}.\n")
+        print(f"Regularisation: {reg}")
+        W, b, cost, cost_list, epoch_list = model.batch_gradient_descent(
+            X_train_scaled, y_train_scaled.reshape(y_train_scaled.shape[0],), reg=reg  
+        )
+
+        y_train_predicted = model.predict(X_train_scaled)
+        y_test_predicted = model.predict(X_test_scaled)
+        y_validation_predicted = model.predict(X_validation_scaled)
+        
+        train_loss = mean_squared_error(y_train_scaled, y_train_predicted)
+        test_loss = mean_squared_error(y_test_scaled, y_test_predicted)
+        validation_loss = mean_squared_error(y_validation_scaled, y_validation_predicted)
+        
+        print(f"Train Loss: {train_loss}\nTest Loss: {test_loss}\nValidation Loss: {validation_loss}.\n")
+        print("------------------------")
 
